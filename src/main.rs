@@ -1,9 +1,11 @@
 mod errors;
 
+use std::collections::HashMap;
 use crate::errors::AppError;
 use dotenv::dotenv;
 use postgres::{Client, NoTls};
 use std::env;
+use rust_postgres::Users;
 
 fn main() -> Result<(), AppError> {
     // Load environment variables from .env file
@@ -53,5 +55,37 @@ fn main() -> Result<(), AppError> {
 
     println!("Tables created successfully or already exist.");
 
+    let mut users = HashMap::new();
+    users.insert( String::from("Kani"), "Kurdiya");
+    users.insert(String::from("Jane"), "Japan");
+    users.insert(String::from("Bob"), "USA");
+
+    for (name, country) in &users {
+        let user = Users{
+            _id: 0,
+            name: name.to_string(),
+            country: country.to_string(),
+        };
+
+        client.execute(
+            "INSERT INTO users (name, country) VALUES ($1, $2)",
+            &[&user.name, &user.country],
+        )?;
+
+        println!("Inserted user: {:?}", user);
+
+        for row in client.query("SELECT * FROM users", &[])? {
+            let user = Users{
+                _id: row.get(0),
+                name: row.get(1),
+                country: row.get(2),
+            };
+            println!("Retrieved user: {:?}, {:?}", user.name, user.country);
+
+        }
+    }
+
+
     Ok(())
 }
+
